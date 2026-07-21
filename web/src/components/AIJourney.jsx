@@ -3,6 +3,7 @@ import { MermaidVisual } from './MermaidVisual.jsx';
 import { CuriosityCapture } from './CuriosityCapture.jsx';
 import { askCuriosity, reflectWow, saveJourney } from '../api.js';
 import { WowReflection } from './WowReflection.jsx';
+import { normalizeAIText, toParagraphs } from '../utils/aiText.js';
 
 function VisualPanel({ visual }) {
   if (visual?.type === 'mermaid') return <MermaidVisual content={visual.content} />;
@@ -55,6 +56,7 @@ export function AIJourney({ topic, result, accessToken, onNewTopic, onWowSaved, 
   const [wowResult, setWowResult] = useState(null);
   const [wowError, setWowError] = useState('');
   const step = steps[stepIndex] || steps[0];
+  const answerParagraphs = toParagraphs(step?.answer, 'No explanation was returned.');
 
   async function submitCuriosity(selection) {
     setCuriosityUsed(true);
@@ -162,7 +164,7 @@ export function AIJourney({ topic, result, accessToken, onNewTopic, onWowSaved, 
           <span className="eyebrow">AI field notes</span>
           <h1>{step.title || topic}</h1>
           <div className="answer-copy">
-            {(step.answer || 'No explanation was returned.').split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => (
+            {answerParagraphs.map((paragraph, index) => (
               <p key={`${paragraph.slice(0, 12)}-${index}`}>{paragraph}</p>
             ))}
           </div>
@@ -187,7 +189,7 @@ export function AIJourney({ topic, result, accessToken, onNewTopic, onWowSaved, 
         <aside className="curiosity-popup" role="status">
           <button type="button" className="curiosity-popup-close" onClick={() => setCuriosityAnswer('')} aria-label="Close curiosity answer">×</button>
           <span className="eyebrow">Curiosity</span>
-          <p>{curiosityLoading ? 'Following that thread…' : curiosityAnswer}</p>
+          <p>{curiosityLoading ? 'Following that thread…' : normalizeAIText(curiosityAnswer)}</p>
         </aside>
       )}
 
