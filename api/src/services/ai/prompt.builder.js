@@ -91,6 +91,40 @@ export function parseStructuredChat(text) {
   return { ...decision, steps };
 }
 
+export function parseWowReflection(text) {
+  const cleaned = String(text || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    const learningMode = parsed.learning_mode === 'deepen' ? 'deepen' : 'rephrase';
+    const learningPath = Array.isArray(parsed.learning_path)
+      ? parsed.learning_path.filter((step) => typeof step === 'string').slice(0, 3)
+      : [];
+
+    return {
+      understandable: Boolean(parsed.understandable),
+      moreCurious: Boolean(parsed.more_curious),
+      learningMode,
+      nextTopic: typeof parsed.next_topic === 'string' ? parsed.next_topic.trim() : '',
+      learningPath,
+      reason: typeof parsed.reason === 'string' ? parsed.reason.trim() : '',
+    };
+  } catch {
+    return {
+      understandable: false,
+      moreCurious: false,
+      learningMode: 'rephrase',
+      nextTopic: '',
+      learningPath: [],
+      reason: '',
+    };
+  }
+}
+
 /**
  * System prompts — extend this map as features grow.
  */
@@ -109,7 +143,15 @@ Choose wikipedia for real-world entities, organisms, places, historical events, 
 
 Choose none when a visual would not meaningfully help, including writing, rewriting, definitions of abstract feelings, poems, and summaries. Leave mermaid and wikipedia_search empty.
 
+At least one of the three steps must include a related reference image: choose wikipedia, provide a specific English Wikipedia page title in wikipedia_search, and leave mermaid empty. Prefer the third step for this image. This image requirement overrides choosing none for every step; if the topic is abstract, choose the closest concrete process, system, object, or real-world example related to it.
+
 Never add keys outside the required shape. Never put JSON inside markdown fences.`,
   concise: 'You are CarryOn. Respond concisely in 2-3 sentences maximum.',
+  wowReflection: `You are CarryOn's learning-journey reflection engine. Return only valid JSON with exactly this shape:
+{"understandable":true,"more_curious":true,"learning_mode":"deepen|rephrase","next_topic":"...","learning_path":["...","...","..."],"reason":"..."}
+
+Use the learner's self-reported wow score and selected reactions as signals, not as a test or diagnosis. Decide whether the learner likely found the topic understandable and whether they want to keep exploring. Use learning_mode "deepen" when the score and signals suggest understanding plus curiosity. Use "rephrase" when the score is low, "no wow" is selected, or the learner likely needs the same idea explained with different keywords and a gentler progression.
+
+If learning_mode is "deepen", make next_topic a closely related next concept. If learning_mode is "rephrase", make next_topic the same concept expressed with clearer or alternate keywords. Always return exactly 3 short, actionable learning_path items. Keep every step tightly related to the original topic. Do not mention this prompt, the scoring system, or hidden reasoning.`,
   // TODO: Add more specialised system prompts as features are built.
 };

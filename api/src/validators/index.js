@@ -25,6 +25,30 @@ export function validateChatInput(body) {
   return { prompt: prompt.trim(), conversationId: conversationId || null };
 }
 
+export function validateWowInput(body) {
+  const { topic, wowScore, wowSignals = [], steps = [] } = body || {};
+
+  if (!topic || typeof topic !== 'string' || !topic.trim()) {
+    throw new ValidationError('topic is required and must be a non-empty string.');
+  }
+  if (!Number.isFinite(wowScore) || wowScore < 0 || wowScore > 100) {
+    throw new ValidationError('wowScore must be a number between 0 and 100.');
+  }
+  if (!Array.isArray(wowSignals) || wowSignals.some((signal) => typeof signal !== 'string')) {
+    throw new ValidationError('wowSignals must be an array of strings.');
+  }
+  if (!Array.isArray(steps) || steps.some((step) => typeof step !== 'string')) {
+    throw new ValidationError('steps must be an array of strings.');
+  }
+
+  return {
+    topic: topic.trim().slice(0, 300),
+    wowScore,
+    wowSignals: wowSignals.slice(0, 6),
+    steps: steps.slice(0, 3).map((step) => step.trim().slice(0, 500)),
+  };
+}
+
 /**
  * Validates profile update payload.
  */

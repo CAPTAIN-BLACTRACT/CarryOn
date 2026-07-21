@@ -1,4 +1,4 @@
-import { createJourney } from '../../models/index.js';
+import { createJourney, getLatestJourney } from '../../models/index.js';
 import { success } from '../../utils/helpers/response.js';
 
 export async function saveJourney(req, res) {
@@ -16,4 +16,9 @@ export async function saveJourney(req, res) {
   });
 
   return success(res, { journey }, 'Journey saved', 201);
+}
+
+export async function latestJourney(req, res) {
+  const journey = await getLatestJourney(req.user.id);
+  return success(res, { journey }, 'Latest journey');
 }

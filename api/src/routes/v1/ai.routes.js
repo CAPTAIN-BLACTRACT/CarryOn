@@ -7,6 +7,7 @@ const router = Router();
 
 router.post('/chat',     authenticate, aiLimiter, asyncHandler(aiCtrl.chat));
 router.post('/curiosity', authenticate, aiLimiter, asyncHandler(aiCtrl.curiosity));
+router.post('/wow',      authenticate, aiLimiter, asyncHandler(aiCtrl.wow));
 router.post('/generate', authenticate, aiLimiter, asyncHandler(aiCtrl.generate));
 
 export default router;

@@ -16,6 +16,22 @@ export function CuriosityCapture({ visual, onSubmit, onCancel }) {
     return () => document.removeEventListener('selectionchange', updateTextSelection);
   }, []);
 
+  useEffect(() => {
+    function submitOnEnter(event) {
+      const currentText = window.getSelection()?.toString().trim() || selectedText;
+      if (
+        event.key !== 'Enter'
+        || event.target.closest?.('button, a, input, textarea, select')
+        || (!currentText && !imageDataUrl)
+      ) return;
+      event.preventDefault();
+      onSubmit({ selectedText: currentText, imageDataUrl });
+    }
+
+    document.addEventListener('keydown', submitOnEnter);
+    return () => document.removeEventListener('keydown', submitOnEnter);
+  }, [imageDataUrl, onSubmit, selectedText]);
+
   function pointFromEvent(event) {
     const rect = imageRef.current.getBoundingClientRect();
     return {
@@ -93,7 +109,7 @@ export function CuriosityCapture({ visual, onSubmit, onCancel }) {
       {error && <p className="curiosity-error">{error}</p>}
       <div className="curiosity-actions">
         <button type="button" className="curiosity-cancel" onClick={onCancel}>Cancel</button>
-        <button type="button" className="curiosity-submit" disabled={!canSubmit} onMouseDown={(event) => event.preventDefault()} onClick={() => onSubmit({ selectedText, imageDataUrl })}>Ask once</button>
+        <button type="button" className="curiosity-submit" disabled={!canSubmit} onMouseDown={(event) => event.preventDefault()} onClick={() => onSubmit({ selectedText, imageDataUrl })}>Ask once ↵</button>
       </div>
     </div>
   );

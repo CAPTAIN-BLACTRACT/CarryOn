@@ -32,3 +32,29 @@ describe('Error classes', () => {
     assert.match(GEMINI_UNAVAILABLE_MESSAGE, /self-hosted version/i);
   });
 });
+
+describe('Gemini configuration', () => {
+  it('uses a stable Flash-Lite fallback by default', async () => {
+    const { default: env } = await import('../src/config/env.js');
+    assert.equal(env.gemini.fallbackModel, 'gemini-3.1-flash-lite');
+  });
+});
+
+describe('Wow reflection parsing', () => {
+  it('normalizes the structured learning decision', async () => {
+    const { parseWowReflection } = await import('../src/services/ai/prompt.builder.js');
+    const result = parseWowReflection(JSON.stringify({
+      understandable: true,
+      more_curious: true,
+      learning_mode: 'deepen',
+      next_topic: 'Process synchronization',
+      learning_path: ['Review the mechanism', 'Compare two strategies', 'Apply it to a system'],
+      reason: 'The learner is ready for a connected concept.',
+    }));
+
+    assert.equal(result.understandable, true);
+    assert.equal(result.moreCurious, true);
+    assert.equal(result.learningMode, 'deepen');
+    assert.equal(result.learningPath.length, 3);
+  });
+});

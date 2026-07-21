@@ -131,6 +131,11 @@ img { display: block; max-width: 100%; }
   position: relative;
   z-index: 1;
 }
+.saved-thread { width: min(560px, 100%); margin-top: 2.5rem; padding: 1.25rem 1.4rem; border: 1px solid #e4c97d44; border-radius: 14px; text-align: left; background: #e4c97d08; }
+.saved-thread h2 { margin-top: 0.45rem; color: #f3f7fa; font-size: 1.05rem; font-weight: 500; }
+.saved-thread p { margin-top: 0.35rem; color: #9eb1bf; font-size: 0.75rem; }
+.saved-thread-btn { margin-top: 0.9rem; padding: 0.55rem 0.8rem; border: 1px solid #e4c97d66; border-radius: 999px; color: #f3d994; font-size: 0.75rem; }
+.saved-thread-btn:hover { background: #e4c97d14; }
 
 .hero-title {
   font-size: clamp(3.5rem, 12vw, 9rem);
@@ -1076,6 +1081,19 @@ img { display: block; max-width: 100%; }
 .curiosity-popup p { margin-top: 0.65rem; color: #c3d6e2; font-size: 0.85rem; line-height: 1.65; }
 .curiosity-popup-close { position: absolute; top: 0.55rem; right: 0.75rem; color: #71859a; font-size: 1.2rem; }
 .ai-journey-actions { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+.wow-button { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 48px; padding: 0 1rem; border: 1px solid #e4c97d55; border-radius: 999px; color: #f3d994; background: #e4c97d0d; font-size: 0.78rem; font-weight: 600; }
+.wow-button:hover { border-color: #f3d994; background: #e4c97d18; color: #fff0bd; }
+.wow-button span { font-size: 1.05rem; }
+.wow-action-end { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #ffffff12; color: #8297a5; font-size: 0.74rem; }
+.wow-action-end .wow-button { flex-shrink: 0; }
+.wow-meter { position: relative; display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0 0.75rem; border: 1px solid #e4c97d2e; border-radius: 999px; background: linear-gradient(110deg, #e4c97d0d, transparent); }
+.wow-meter-label { display: inline-flex; align-items: center; gap: 0.25rem; color: #d8c17e; font-size: 0.7rem; font-weight: 600; }
+.wow-meter-label span { color: #f3d994; font-size: 0.9rem; }
+.wow-meter-track { width: 58px; height: 5px; overflow: hidden; border-radius: 999px; background: #ffffff16; }
+.wow-meter-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b99746, #fff0bd); box-shadow: 0 0 10px #f3d99488; transition: width 0.5s ease; }
+.wow-meter strong { min-width: 1.4rem; color: #f3d994; font: 0.68rem var(--font-mono); text-align: right; }
+.wow-meter-guidance { position: absolute; top: calc(100% + 0.6rem); right: 0; width: 230px; padding: 0.65rem 0.75rem; border: 1px solid #e4c97d44; border-radius: 9px; color: #d7e5eb; background: #0b0b0bf7; box-shadow: 0 12px 30px #00000066; font-size: 0.7rem; line-height: 1.4; opacity: 0; pointer-events: none; transform: translateY(-4px); transition: opacity 0.2s ease, transform 0.2s ease; }
+.wow-meter:hover .wow-meter-guidance, .wow-meter:focus-within .wow-meter-guidance { opacity: 1; transform: translateY(0); }
 .magnifier-top-button { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #ffffff1c; border-radius: 50%; color: #9bdcf7; }
 .magnifier-top-button:hover { border-color: #71c9f0; background: #71c9f00d; color: #e6f8ff; }
 .magnifier-top-button svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.7; }
@@ -1093,7 +1111,34 @@ img { display: block; max-width: 100%; }
 .curiosity-overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 1rem; background: #000000b8; backdrop-filter: blur(8px); }
 .curiosity-modal { position: relative; width: min(620px, 100%); max-height: min(760px, calc(100vh - 2rem)); overflow: auto; border: 1px solid #71c9f044; border-radius: 18px; background: #0b0b0b; box-shadow: 0 24px 90px #000; }
 .curiosity-modal .curiosity-capture { padding: 2rem; }
+.curiosity-selection-panel { position: fixed; left: 50%; bottom: 1.25rem; z-index: 8; width: min(520px, calc(100% - 2rem)); transform: translateX(-50%); border: 1px solid #71c9f044; border-radius: 14px; background: #0b0b0bf5; box-shadow: 0 18px 60px #00000088; }
+.curiosity-selection-panel .curiosity-capture { padding: 1rem 1.2rem; }
+.curiosity-selection-panel .curiosity-instruction p { padding-right: 1.5rem; }
 .curiosity-popup { top: 50%; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%); }
+.wow-panel { position: fixed; top: 50%; left: 50%; z-index: 12; width: min(560px, calc(100% - 2rem)); max-height: min(760px, calc(100vh - 2rem)); overflow: auto; transform: translate(-50%, -50%); border: 1px solid #e4c97d55; border-radius: 18px; background: #0b0b0bf7; box-shadow: 0 24px 90px #000; }
+.wow-stage { padding: 2rem; }
+.wow-stage h2 { margin-top: 0.7rem; max-width: 420px; color: #f3f7fa; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -0.04em; }
+.wow-copy { margin-top: 0.7rem; color: #a9bdca; font-size: 0.84rem; line-height: 1.55; }
+.wow-score-preview { display: block; margin: 1.6rem 0 0.8rem; color: #f3d994; font-size: 3.8rem; font-weight: 600; letter-spacing: -0.08em; text-align: center; }
+.wow-range { width: 100%; accent-color: #f3d994; }
+.wow-scale { display: flex; justify-content: space-between; margin-top: 0.45rem; color: #738899; font: 0.68rem var(--font-mono); }
+.wow-primary-btn { width: 100%; margin-top: 1.5rem; padding: 0.78rem 1rem; border: 1px solid #f3d994; border-radius: 999px; color: #10100d; background: #f3d994; font-size: 0.78rem; font-weight: 700; }
+.wow-primary-btn:hover { background: #fff0bd; }
+.wow-primary-btn:disabled { cursor: wait; opacity: 0.55; }
+.wow-result-actions { display: grid; gap: 0.6rem; margin-top: 1.5rem; }
+.wow-result-actions .wow-primary-btn { margin-top: 0; }
+.wow-rest-btn { padding: 0.7rem 1rem; border: 1px solid #ffffff18; border-radius: 999px; color: #9eb1bf; font-size: 0.76rem; }
+.wow-rest-btn:hover { border-color: #ffffff40; color: #e7f1f6; }
+.wow-reactions { display: grid; gap: 0.55rem; margin-top: 1.3rem; }
+.wow-reaction { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.75rem 0.8rem; border: 1px solid #ffffff12; border-radius: 10px; cursor: pointer; }
+.wow-reaction:hover, .wow-reaction.selected { border-color: #e4c97d66; background: #e4c97d0d; }
+.wow-reaction input { width: 1rem; height: 1rem; margin-top: 0.12rem; accent-color: #f3d994; }
+.wow-reaction strong, .wow-reaction small { display: block; }
+.wow-reaction strong { color: #e7f1f6; font-size: 0.8rem; }
+.wow-reaction small { margin-top: 0.18rem; color: #8499a8; font-size: 0.7rem; }
+.wow-learning-path { display: grid; gap: 0.75rem; margin: 1.4rem 0 0; padding-left: 1.3rem; color: #c9dbe5; font-size: 0.84rem; line-height: 1.45; }
+.wow-learning-path li::marker { color: #f3d994; font-family: var(--font-mono); }
+.wow-error { margin-top: 0.75rem; color: var(--accent-ai); font-size: 0.75rem; }
 .answer-card h1 { max-width: 520px; margin: 0.8rem 0 2rem; color: #f1f7fb; font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 450; letter-spacing: -0.06em; line-height: 1.02; }
 .answer-copy { display: grid; gap: 1.1rem; color: #b3c5d3; font-size: 1rem; line-height: 1.85; }
 .answer-copy p { max-width: 560px; }

@@ -89,6 +89,8 @@ The frontend (Vite) proxies `/api` requests to this port automatically.
 | `SUPABASE_SECRET_KEY` | Prod | Supabase server-only secret key |
 | `SUPABASE_JWT_SECRET` | No | JWT secret for manual verification |
 | `GEMINI_API_KEY` | Prod | Google Gemini API key |
+| `GEMINI_MODEL` | No | Primary Gemini model (default: `gemini-3.5-flash`) |
+| `GEMINI_FALLBACK_MODEL` | No | Fallback Gemini model (default: `gemini-3.1-flash-lite`) |
 | `IMAGE_PROVIDER` | No | `pexels` or `pixabay` (default: pexels) |
 | `IMAGE_API_KEY` | No | API key for image provider |
 | `FRONTEND_URL` | Prod | Frontend URL for CORS whitelist |

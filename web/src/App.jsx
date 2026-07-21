@@ -4,7 +4,7 @@ import { LoadingScreen } from './components/LoadingScreen.jsx';
 import { AIJourney } from './components/AIJourney.jsx';
 import { AuthPanel } from './components/AuthPanel.jsx';
 import { supabase } from './supabase.js';
-import { chat, saveJourney } from './api.js';
+import { chat, getLatestJourney, saveJourney } from './api.js';
 
 export default function App() {
   const [screen, setScreen] = useState('entry');
@@ -15,16 +15,25 @@ export default function App() {
   const [pendingInput, setPendingInput] = useState(null);
   const [journeyResult, setJourneyResult] = useState(null);
   const [accessToken, setAccessToken] = useState('');
+  const [latestJourney, setLatestJourney] = useState(null);
 
   useEffect(() => {
     if (!supabase) return undefined;
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
       setAccessToken(data.session?.access_token || '');
+      if (data.session?.access_token) {
+        getLatestJourney(data.session.access_token).then(({ journey }) => setLatestJourney(journey)).catch(() => null);
+      }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       setAccessToken(session?.access_token || '');
+      if (session?.access_token) {
+        getLatestJourney(session.access_token).then(({ journey }) => setLatestJourney(journey)).catch(() => null);
+      } else {
+        setLatestJourney(null);
+      }
       if (session?.user && pendingInput) {
         startJourney(pendingInput, session.access_token);
         setPendingInput(null);
@@ -62,6 +71,15 @@ export default function App() {
     setJourneyResult(null);
   }, []);
 
+  const startSuggestedTopic = useCallback(() => {
+    if (!latestJourney?.next_topic) return;
+    startJourney({ question: latestJourney.next_topic, wowFactor: latestJourney.wow_factor });
+  }, [latestJourney, startJourney]);
+
+  const handleWowSaved = useCallback((journey) => {
+    setLatestJourney(journey);
+  }, []);
+
   if (screen === 'loading') {
     return (
       <LoadingScreen
@@ -73,12 +91,30 @@ export default function App() {
   }
 
   if (screen === 'journey') {
-    return <AIJourney topic={userInput?.question || 'your concept'} result={journeyResult} accessToken={accessToken} onNewTopic={goHome} />;
+    return (
+      <AIJourney
+        topic={userInput?.question || 'your concept'}
+        result={journeyResult}
+        accessToken={accessToken}
+        onNewTopic={goHome}
+        onWowSaved={handleWowSaved}
+        onExploreNext={(nextTopic, wowFactor) => startJourney({ question: nextTopic, wowFactor })}
+        onRest={goHome}
+        wowFactor={userInput?.wowFactor}
+      />
+    );
   }
 
   return (
     <>
-      <EntryPhase onSubmit={startJourney} user={user} onLogin={() => setAuthOpen(true)} onLogout={() => supabase?.auth.signOut()} />
+      <EntryPhase
+        onSubmit={startJourney}
+        user={user}
+        savedJourney={latestJourney?.wow_factor !== null ? latestJourney : null}
+        onExploreSaved={startSuggestedTopic}
+        onLogin={() => setAuthOpen(true)}
+        onLogout={() => supabase?.auth.signOut()}
+      />
       {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
     </>
   );

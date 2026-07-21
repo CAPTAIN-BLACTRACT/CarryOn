@@ -14,6 +14,10 @@ export function saveJourney(journey, accessToken) {
   return request('/api/v1/journey', { method: 'POST', body: JSON.stringify(journey) }, accessToken);
 }
 
+export function getLatestJourney(accessToken) {
+  return request('/api/v1/journey/latest', {}, accessToken);
+}
+
 export function chat({ prompt, conversationId = null }, accessToken) {
   return request('/api/v1/ai/chat', {
     method: 'POST',
@@ -25,5 +29,12 @@ export function askCuriosity({ topic, selectedText = '', imageDataUrl = '' }, ac
   return request('/api/v1/ai/curiosity', {
     method: 'POST',
     body: JSON.stringify({ topic, selectedText, imageDataUrl }),
+  }, accessToken);
+}
+
+export function reflectWow({ topic, wowScore, wowSignals, steps }, accessToken) {
+  return request('/api/v1/ai/wow', {
+    method: 'POST',
+    body: JSON.stringify({ topic, wowScore, wowSignals, steps }),
   }, accessToken);
 }

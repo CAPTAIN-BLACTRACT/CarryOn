@@ -130,3 +130,9 @@ export async function createJourney(userId, journey) {
     q.insert({ user_id: userId, ...journey }).select().single()
   );
 }
+
+export async function getLatestJourney(userId) {
+  return query('journeys', (q) =>
+    q.select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  );
+}

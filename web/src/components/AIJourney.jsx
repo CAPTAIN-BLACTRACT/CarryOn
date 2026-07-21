@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { MermaidVisual } from './MermaidVisual.jsx';
 import { CuriosityCapture } from './CuriosityCapture.jsx';
-import { askCuriosity } from '../api.js';
+import { askCuriosity, reflectWow, saveJourney } from '../api.js';
+import { WowReflection } from './WowReflection.jsx';
 
 function VisualPanel({ visual }) {
   if (visual?.type === 'mermaid') return <MermaidVisual content={visual.content} />;
@@ -33,7 +34,13 @@ function MagnifierIcon() {
   );
 }
 
-export function AIJourney({ topic, result, accessToken, onNewTopic }) {
+function wowGuidance(score) {
+  if (score <= 25) return 'Take a rest and come back to this when you feel ready.';
+  if (score <= 75) return 'Explore a different angle and make a new connection.';
+  return 'Dive deeper into this topic and follow the strongest thread.';
+}
+
+export function AIJourney({ topic, result, accessToken, onNewTopic, onWowSaved, onExploreNext, onRest, wowFactor }) {
   const steps = result?.steps?.length
     ? result.steps
     : [{ title: 'Your idea', answer: result?.answer, funFact: '', visual: result?.visual }];
@@ -42,6 +49,11 @@ export function AIJourney({ topic, result, accessToken, onNewTopic }) {
   const [curiosityUsed, setCuriosityUsed] = useState(false);
   const [curiosityAnswer, setCuriosityAnswer] = useState('');
   const [curiosityLoading, setCuriosityLoading] = useState(false);
+  const [wowOpen, setWowOpen] = useState(false);
+  const [wowLoading, setWowLoading] = useState(false);
+  const [wowScore, setWowScore] = useState(null);
+  const [wowResult, setWowResult] = useState(null);
+  const [wowError, setWowError] = useState('');
   const step = steps[stepIndex] || steps[0];
 
   async function submitCuriosity(selection) {
@@ -58,6 +70,37 @@ export function AIJourney({ topic, result, accessToken, onNewTopic }) {
     }
   }
 
+  async function submitWow({ wowScore, wowSignals }) {
+    setWowLoading(true);
+    setWowScore(wowScore);
+    setWowError('');
+    try {
+      const reflection = await reflectWow({
+        topic,
+        wowScore,
+        wowSignals,
+        steps: steps.map((item) => `${item.title}: ${item.answer}`),
+      }, accessToken);
+      setWowResult(reflection);
+      saveJourney({
+        nextTopic: reflection.nextTopic || topic,
+        curiosityScores: { wowSignals, understandable: reflection.understandable, moreCurious: reflection.moreCurious },
+        wowFactor: wowScore,
+        metadata: { learningMode: reflection.learningMode, sourceTopic: topic },
+      }, accessToken).catch(() => null);
+      onWowSaved({
+        next_topic: reflection.nextTopic || topic,
+        wow_factor: wowScore,
+        curiosity_scores: { wowSignals, understandable: reflection.understandable, moreCurious: reflection.moreCurious },
+        metadata: { learningMode: reflection.learningMode, sourceTopic: topic },
+      });
+    } catch (error) {
+      setWowError(error.message || 'The next thread could not be found. Try again.');
+    } finally {
+      setWowLoading(false);
+    }
+  }
+
   return (
     <main className="ai-journey">
       <header className="ai-journey-header">
@@ -67,6 +110,14 @@ export function AIJourney({ topic, result, accessToken, onNewTopic }) {
           <strong>{topic}</strong>
         </div>
         <div className="ai-journey-actions">
+          {Number.isFinite(wowFactor) && (
+            <div className="wow-meter" title={wowGuidance(wowFactor)}>
+              <span className="wow-meter-label"><span aria-hidden="true">✦</span> Wow</span>
+              <span className="wow-meter-track" aria-hidden="true"><span style={{ width: `${wowFactor}%` }} /></span>
+              <strong>{wowFactor}</strong>
+              <span className="wow-meter-guidance" role="tooltip">{wowGuidance(wowFactor)}</span>
+            </div>
+          )}
           {!curiosityUsed && (
             <button
               type="button"
@@ -121,6 +172,14 @@ export function AIJourney({ topic, result, accessToken, onNewTopic }) {
               <p>{step.funFact}</p>
             </aside>
           )}
+          {stepIndex === steps.length - 1 && (
+            <div className="wow-action-end">
+              <span>Reached the end of this thread?</span>
+              <button className="wow-button" type="button" onClick={() => { setWowOpen(true); setWowResult(null); setWowError(''); }}>
+                <span aria-hidden="true">✦</span> Find the next thread
+              </button>
+            </div>
+          )}
         </article>
       </div>
 
@@ -133,12 +192,22 @@ export function AIJourney({ topic, result, accessToken, onNewTopic }) {
       )}
 
       {curiosityOpen && (
-        <div className="curiosity-overlay" role="presentation">
-          <section className="curiosity-modal" role="dialog" aria-modal="true" aria-label="Curiosity check">
-            <button type="button" className="curiosity-popup-close" onClick={() => setCuriosityOpen(false)} aria-label="Close curiosity check">×</button>
-            <CuriosityCapture visual={step.visual} onSubmit={submitCuriosity} onCancel={() => setCuriosityOpen(false)} />
-          </section>
-        </div>
+        <aside className="curiosity-selection-panel" role="status" aria-label="Curiosity selection mode">
+          <button type="button" className="curiosity-popup-close" onClick={() => setCuriosityOpen(false)} aria-label="Close curiosity selection mode">×</button>
+          <CuriosityCapture visual={step.visual} onSubmit={submitCuriosity} onCancel={() => setCuriosityOpen(false)} />
+        </aside>
+      )}
+
+      {wowOpen && (
+        <WowReflection
+          loading={wowLoading}
+          result={wowResult}
+          error={wowError}
+          onSubmit={submitWow}
+          onClose={() => { setWowOpen(false); setWowResult(null); }}
+          onExploreNext={() => onExploreNext(wowResult?.nextTopic || topic, wowScore)}
+          onRest={onRest}
+        />
       )}
     </main>
   );

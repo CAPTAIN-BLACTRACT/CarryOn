@@ -1,1 +1,1 @@
-export { saveJourney } from './journey.controller.js';
+export { saveJourney, latestJourney } from './journey.controller.js';

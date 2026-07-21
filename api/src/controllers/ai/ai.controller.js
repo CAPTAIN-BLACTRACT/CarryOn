@@ -1,7 +1,7 @@
 import { success } from '../../utils/helpers/response.js';
-import { validateChatInput } from '../../validators/index.js';
+import { validateChatInput, validateWowInput } from '../../validators/index.js';
 import { ValidationError } from '../../utils/errors.js';
-import { buildChatPrompt, parseStructuredChat, SYSTEM_PROMPTS } from '../../services/ai/prompt.builder.js';
+import { buildChatPrompt, parseStructuredChat, parseWowReflection, SYSTEM_PROMPTS } from '../../services/ai/prompt.builder.js';
 import { gemini, ConversationManager } from '../../services/ai/index.js';
 import { visualService } from '../../services/visual/index.js';
 import * as models from '../../models/index.js';
@@ -37,12 +37,27 @@ export async function chat(req, res) {
     ...decision,
     title: ['Foundation', 'How it works', 'See it in context'][index],
   });
-  const steps = await Promise.all(rawSteps.map(async (step) => ({
+  let steps = await Promise.all(rawSteps.map(async (step) => ({
     title: step.title,
     answer: step.answer,
     funFact: step.funFact,
     visual: await visualService.resolve(step),
   })));
+
+  // Keep the experience visual if the model still returns `none` for every
+  // step or chooses an invalid image title.
+  if (!steps.some((step) => step.visual?.type === 'image')) {
+    const imageTitle = rawSteps.find((step) => step.wikipediaSearch)?.wikipediaSearch || prompt;
+    const fallbackVisual = await visualService.resolve({
+      visualType: 'wikipedia',
+      wikipediaSearch: imageTitle,
+    });
+    if (fallbackVisual.type === 'image') {
+      steps = steps.map((step, index) => index === steps.length - 1
+        ? { ...step, visual: fallbackVisual }
+        : step);
+    }
+  }
   const visual = steps[0]?.visual || { type: 'none' };
 
   await models.addMessage(conversationId, 'user', prompt);
@@ -79,6 +94,24 @@ export async function curiosity(req, res) {
   });
 
   return success(res, { answer: result.text?.trim() || 'No additional detail was available.' }, 'Curiosity answered');
+}
+
+export async function wow(req, res) {
+  const { topic, wowScore, wowSignals, steps } = validateWowInput(req.body);
+  const reflectionPrompt = [
+    `Topic: ${topic}`,
+    `Wow score: ${wowScore}/100`,
+    `Learner reactions: ${wowSignals.length ? wowSignals.join(', ') : 'none selected'}`,
+    `Journey steps: ${steps.length ? steps.join(' | ') : 'not available'}`,
+  ].join('\n');
+
+  const completion = await gemini.chat(
+    buildChatPrompt(reflectionPrompt, { systemInstruction: SYSTEM_PROMPTS.wowReflection }),
+    { responseMimeType: 'application/json' }
+  );
+  const reflection = parseWowReflection(completion.text);
+
+  return success(res, reflection, 'Wow reflection');
 }
 
 /**

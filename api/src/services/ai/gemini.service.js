@@ -13,23 +13,20 @@ export class GeminiProvider extends AIProvider {
     super();
     this.ai = new GoogleGenAI({ apiKey });
     this.model = env.gemini.model;
+    this.fallbackModel = env.gemini.fallbackModel;
   }
 
   async generateText(prompt, options = {}) {
-    return this._withRetry(async () => {
-      const response = await this.ai.models.generateContent({
-        model: options.model || this.model,
-        contents: prompt,
-      });
-      return {
-        text: response.text,
-        usage: response.usageMetadata || {},
-      };
-    });
+    const model = options.model || this.model;
+    return this._withModelFallback(
+      () => this._generateText(prompt, model),
+      options.model ? null : () => this._generateText(prompt, this.fallbackModel)
+    );
   }
 
   async chat(messages, options = {}) {
-    return this._withRetry(async () => {
+    const model = options.model || this.model;
+    const generate = (selectedModel) => this._withRetry(async () => {
       // Convert our standard format to Gemini format
       const contents = messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : m.role,
@@ -37,7 +34,7 @@ export class GeminiProvider extends AIProvider {
       }));
 
       const response = await this.ai.models.generateContent({
-        model: options.model || this.model,
+        model: selectedModel,
         contents,
         config: options.responseMimeType
           ? { responseMimeType: options.responseMimeType }
@@ -49,10 +46,14 @@ export class GeminiProvider extends AIProvider {
         usage: response.usageMetadata || {},
       };
     });
+    return this._withModelFallback(
+      () => generate(model),
+      options.model ? null : () => generate(this.fallbackModel)
+    );
   }
 
   async analyzeCuriosity({ topic, selectedText = '', imageDataUrl = '' }) {
-    return this._withRetry(async () => {
+    const generate = (model) => this._withRetry(async () => {
       const parts = [{
         text: `You are helping a learner investigate one small detail. Explain the selected detail clearly and briefly in the context of the topic. Do not discuss the image or selection process. Return plain text only.\n\nTopic: ${topic}\nSelected text: ${selectedText || '(an image region was selected)'}`,
       }];
@@ -65,12 +66,50 @@ export class GeminiProvider extends AIProvider {
       }
 
       const response = await this.ai.models.generateContent({
-        model: this.model,
+        model,
         contents: [{ role: 'user', parts }],
       });
 
       return { text: response.text, usage: response.usageMetadata || {} };
     });
+    return this._withModelFallback(
+      () => generate(this.model),
+      () => generate(this.fallbackModel)
+    );
+  }
+
+  async _generateText(prompt, model) {
+    return this._withRetry(async () => {
+      const response = await this.ai.models.generateContent({ model, contents: prompt });
+      return { text: response.text, usage: response.usageMetadata || {} };
+    });
+  }
+
+  async _withModelFallback(primaryFn, fallbackFn) {
+    try {
+      return await primaryFn();
+    } catch (primaryError) {
+      if (!fallbackFn || !this.fallbackModel || this.fallbackModel === this.model) {
+        throw primaryError;
+      }
+
+      logger.warn('Primary Gemini model failed; trying fallback model', {
+        primaryModel: this.model,
+        fallbackModel: this.fallbackModel,
+      });
+
+      try {
+        return await fallbackFn();
+      } catch (fallbackError) {
+        throw new AIServiceError(
+          GEMINI_UNAVAILABLE_MESSAGE,
+          {
+            primaryError: primaryError.details?.originalError || primaryError.message,
+            fallbackError: fallbackError.details?.originalError || fallbackError.message,
+          }
+        );
+      }
+    }
   }
 
   async chatStream(messages, options = {}) {
