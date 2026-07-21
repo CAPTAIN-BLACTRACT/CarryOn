@@ -2,16 +2,16 @@ services:
   - type: web
     name: carryon-api
     runtime: node
+    rootDir: api
     region: oregon
     plan: free
-    buildCommand: cd apps/api && npm ci
-    startCommand: cd apps/api && npm start
+    autoDeployTrigger: commit
+    buildCommand: npm ci
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
